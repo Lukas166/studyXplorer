@@ -573,6 +573,7 @@ CUSTOM_CSS = """
     }
     
     /* Expander */
+    /* Header */
     .streamlit-expanderHeader {
         background: #ffffff;
         border: 2px solid #000000;
@@ -581,9 +582,28 @@ CUSTOM_CSS = """
         font-weight: 600;
         color: #000000;
     }
-    
     .streamlit-expanderHeader:hover {
         background: #f9f9f9;
+    }
+    /* Ensure header doesn't turn dark on focus/active in dark themes */
+    .streamlit-expanderHeader:focus,
+    .streamlit-expanderHeader:active {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    /* Expander container/content (fix black background when open on some themes) */
+    [data-testid="stExpander"],
+    [data-testid="stExpander"] > details,
+    [data-testid="stExpander"] > details[open],
+    [data-testid="stExpander"] > details > summary,
+    [data-testid="stExpander"] .streamlit-expanderContent {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+    /* Content area wrapper */
+    [data-testid="stExpander"] .streamlit-expanderContent > div {
+        background: #ffffff !important;
     }
     
     /* Tab Styling - Hide default tabs, use custom */

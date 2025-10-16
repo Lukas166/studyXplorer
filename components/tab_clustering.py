@@ -101,7 +101,7 @@ def render_clustering(clustering_engine, X_reduced, clustering_method, n_cluster
         )
     
     # Display results
-    st.markdown("### 📊 Clustering Results")
+    st.markdown("### Clustering Results")
     
     metrics = [
         {"label": "Clusters Found", "value": results['n_clusters'], "icon": "🎯"},
