@@ -1,6 +1,4 @@
 class ClusterAnalyzer:
-    """Analyze cluster profiles and generate recommendations"""
-    
     def analyze_cluster_profiles(self, data, labels, feature_names):
         """Analisis profil setiap cluster"""
         df_analysis = data.copy()
@@ -103,3 +101,54 @@ class ClusterAnalyzer:
             recommendations.append("Kembangkan kebiasaan belajar konsisten sepanjang semester")
         
         return recommendations
+    
+    def plot_k_distance_graph(self, k_distances, recommended_eps):
+        """Create k-distance plot untuk membantu pemilihan eps DBSCAN"""
+        import plotly.graph_objects as go
+        
+        fig = go.Figure()
+        
+        # Plot k-distance curve
+        fig.add_trace(go.Scatter(
+            x=list(range(len(k_distances))),
+            y=k_distances,
+            mode='lines',
+            name='k-distance',
+            line=dict(color='#000000', width=2)
+        ))
+        
+        # Add recommended eps line
+        fig.add_hline(
+            y=recommended_eps,
+            line_dash="dash",
+            line_color="red",
+            line_width=2,
+            annotation_text=f"Recommended EPS: {recommended_eps:.3f}",
+            annotation_position="right"
+        )
+        
+        fig.update_layout(
+            title={
+                'text': 'K-Distance Graph (DBSCAN EPS Selection)',
+                'font': {'size': 18, 'color': '#000000'}
+            },
+            xaxis={
+                'title': 'Data Points (sorted)',
+                'color': '#000000',
+                'showgrid': True,
+                'gridcolor': '#e0e0e0'
+            },
+            yaxis={
+                'title': 'k-distance',
+                'color': '#000000',
+                'showgrid': True,
+                'gridcolor': '#e0e0e0'
+            },
+            plot_bgcolor='#ffffff',
+            paper_bgcolor='#ffffff',
+            font={'color': '#000000'},
+            height=400,
+            hovermode='x unified'
+        )
+        
+        return fig

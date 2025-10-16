@@ -9,8 +9,8 @@ def render_header():
     """Render modern app header"""
     st.markdown("""
         <div class="app-header animate-fade-in">
-            <h1>Study Xplorer - Clustering Analysis</h1>
-            <p>Analisis clustering profesional untuk data mahasiswa dengan visualisasi interaktif</p>
+            <h1>Study Xplorer - Clustering <br> Analysis Tools</h1>
+            <p>Analisis clustering untuk data mahasiswa dengan visualisasi interaktif agar dapat mengetahui pola eksplorasi dari mahasiswa.</p>
         </div>
     """, unsafe_allow_html=True)
 

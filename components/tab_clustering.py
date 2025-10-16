@@ -86,6 +86,9 @@ def render_clustering(clustering_engine, X_reduced, clustering_method, n_cluster
     # Perform clustering
     if clustering_method == 'dbscan':
         clustering_params = {'eps': eps, 'min_samples': min_samples}
+    elif clustering_method == 'hierarchical':
+        # Default: ward linkage with automatic distance threshold
+        clustering_params = {'linkage': 'ward', 'distance_threshold': None}
     else:
         clustering_params = {}
     
@@ -93,7 +96,7 @@ def render_clustering(clustering_engine, X_reduced, clustering_method, n_cluster
         results = clustering_engine.perform_clustering(
             X_reduced,
             method=clustering_method,
-            n_clusters=n_clusters if clustering_method != 'dbscan' else None,
+            n_clusters=n_clusters if clustering_method not in ['dbscan', 'hierarchical'] else None,
             **clustering_params
         )
     

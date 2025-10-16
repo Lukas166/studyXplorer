@@ -258,17 +258,44 @@ CUSTOM_CSS = """
     }
     
     .stDownloadButton > button {
-        background: #000000;
-        color: #ffffff;
-        border: none;
+        background: #000000 !important;
+        color: #ffffff !important;
+        border: none !important;
         border-radius: 8px;
         padding: 0.875rem 2rem;
         font-size: 1rem;
         font-weight: 600;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
     
     .stDownloadButton > button:hover {
-        background: #333333;
+        background: #1a1a1a !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    /* Specific styling for template download and sample data buttons */
+    button[key="download_template_btn"],
+    button[key="load_sample_btn"],
+    button[key="download_results_csv_btn"] {
+        background: #000000 !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px;
+        padding: 0.875rem 1.5rem !important;
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    button[key="download_template_btn"]:hover,
+    button[key="load_sample_btn"]:hover,
+    button[key="download_results_csv_btn"]:hover {
+        background: #1a1a1a !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
     }
     
     /* Input Styling */
@@ -392,7 +419,7 @@ CUSTOM_CSS = """
     .stSlider [data-baseweb="slider"] [role="slider"] {
         background-color: #000000 !important;
         border: 2px solid #000000 !important;
-    }y
+    }
     
     .stSlider .st-emotion-cache-1inwz65 {
         background: #000000 !important;
@@ -450,60 +477,36 @@ CUSTOM_CSS = """
         color: #666666 !important;
     }
     
-    /* File Uploader - Clear button (tombol X) */
-    /* Reset any global button styling inside uploader */
-    .stFileUploader .stButton > button,
-    .stFileUploader button,
-    .stFileUploader [data-baseweb="button"],
-    .stFileUploader [role="button"],
+    /* Tombol "Browse files" di dalam file uploader */
+    .stFileUploader [data-testid="stFileUploadDropzone"] button {
+        background-color: #000000 !important;
+        color: #ffffff !important; /* Teks menjadi putih */
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.75rem 1.5rem !important;
+    }
+    
+    .stFileUploader [data-testid="stFileUploadDropzone"] button:hover {
+        background-color: #1a1a1a !important;
+        color: #ffffff !important;
+    }
+
+    /* Tombol 'X' (hapus file) kembali ke normal */
     .stFileUploader [data-testid="stFileUploaderDeleteBtn"] {
-        background: transparent !important;
         background-color: transparent !important;
+        color: #31333F !important; /* Warna ikon abu-abu default */
         border: none !important;
         box-shadow: none !important;
-        color: #000000 !important;
     }
 
-    /* Specific icon-kind buttons */
-    .stFileUploader button[kind="icon"],
-    .stFileUploader [data-testid="stFileUploaderDeleteBtn"] {
-        background: transparent !important;
+    .stFileUploader [data-testid="stFileUploaderDeleteBtn"]:hover {
         background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        color: #000000 !important;
+        color: #FF4B4B !important; /* Warna ikon merah saat hover (standar Streamlit) */
     }
 
-    /* Hover/active/focus states remain transparent */
-    .stFileUploader button[kind="icon"]:hover,
-    .stFileUploader button[kind="icon"]:active,
-    .stFileUploader button[kind="icon"]:focus,
-    .stFileUploader [data-testid="stFileUploaderDeleteBtn"]:hover,
-    .stFileUploader [data-testid="stFileUploaderDeleteBtn"]:active,
-    .stFileUploader [data-testid="stFileUploaderDeleteBtn"]:focus {
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        color: #000000 !important;
-        outline: none !important;
-    }
-
-    /* Ensure SVG icon itself is black and has no background */
-    .stFileUploader button svg,
+    /* Memastikan ikon SVG di dalam tombol X juga mengikuti warna */
     .stFileUploader [data-testid="stFileUploaderDeleteBtn"] svg {
-        fill: #000000 !important;
-        color: #000000 !important;
-        background: transparent !important;
-    }
-
-    /* Remove any padding/background from container around the X button */
-    .stFileUploader [data-testid="stFileUploaderFile"] > div,
-    .stFileUploader [data-testid="stFileUploaderFile"] [data-baseweb],
-    .stFileUploader [data-testid="stFileUploaderFile"] [role="button"] {
-        background: transparent !important;
-        background-color: transparent !important;
-        box-shadow: none !important;
+        fill: currentColor !important;
     }
     
     /* File uploader file name area */

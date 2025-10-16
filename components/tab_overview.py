@@ -23,7 +23,15 @@ def render_data_overview(df):
     
     # Dataset preview
     st.markdown("### Dataset Preview")
-    st.dataframe(df.head(10), use_container_width=True, height=300)
+    
+    # Anonymize name column for preview
+    df_preview = df.head(10).copy()
+    # Find column that contains "nama" (case insensitive)
+    name_cols = [col for col in df_preview.columns if 'nama' in col.lower()]
+    for col in name_cols:
+        df_preview[col] = 'Anonim'
+    
+    st.dataframe(df_preview, use_container_width=True, height=300)
     
     # Basic statistics
     if len(numeric_cols) > 0:

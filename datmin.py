@@ -344,7 +344,7 @@ class ClusteringAnalysis:
 
 def main():
     # Header
-    st.markdown('<h1 class="main-header">Clustering Analysis Tool</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">🎓 Clustering Analysis Tool</h1>', unsafe_allow_html=True)
     st.markdown("Analisis clustering untuk data mahasiswa dengan berbagai metode preprocessing dan algoritma")
     
     # Sidebar
@@ -423,7 +423,7 @@ def main():
     analyzer = ClusteringAnalysis(df)
     
     # Main content
-    tab1, tab2, tab3, tab4 = st.tabs(["Data Overview", "Preprocessing", "Clustering", "Results"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📈 Data Overview", "🔍 Preprocessing", "🎯 Clustering", "📊 Results"])
     
     with tab1:
         st.subheader("Data Overview")
@@ -525,7 +525,7 @@ def main():
                 st.metric("Silhouette Score", f"{sil_score:.3f}")
                 st.metric("Davies-Bouldin Score", f"{db_score:.3f}")
                 
-                st.info(f"Recommended number of clusters: {optimal_k_sil} based on silhouette score")
+                st.info(f"🎯 Recommended number of clusters: **{optimal_k_sil}** based on silhouette score")
             
             with col2:
                 # Plot metrics
@@ -624,7 +624,7 @@ def main():
             if profiles:
                 for interpretation in profiles['interpretations']:
                     if interpretation['cluster'] != -1:  # Skip noise cluster
-                        with st.expander(f"Cluster {interpretation['cluster']} - {interpretation['dominant_style']} "f"({interpretation['size']} students, IPK: {float(np.mean(interpretation['ipk'])):.2f})"):
+                        with st.expander(f"🎯 Cluster {interpretation['cluster']} - {interpretation['dominant_style']} "f"({interpretation['size']} students, IPK: {float(np.mean(interpretation['ipk'])):.2f})"):
                             col1, col2 = st.columns([2, 1])
                             
                             with col1:

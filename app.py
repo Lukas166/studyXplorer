@@ -56,27 +56,52 @@ def main():
         </div>
     """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns([2, 1])
+    # Download Template and Load Sample Data buttons
+    col1, col2, col3 = st.columns([1.2, 1.2, 1.6])
     with col1:
-        uploaded_file = st.file_uploader("Upload your CSV dataset", type=['csv'], label_visibility="collapsed")
+        # Download template button
+        with open("template-pertanyaan.csv", "rb") as template_file:
+            st.download_button(
+                label="Download Template",
+                data=template_file,
+                file_name="template-pertanyaan.csv",
+                mime="text/csv",
+                use_container_width=True,
+                key="download_template_btn"
+            )
     
     with col2:
-        if uploaded_file is not None:
+        # Load sample data button
+        if st.button("Load Sample Data", use_container_width=True, key="load_sample_btn"):
             try:
-                df = pd.read_csv(uploaded_file)
-                # Only save to session if it's a new file or first upload
-                if st.session_state['df'] is None or 'uploaded_file_name' not in st.session_state or st.session_state.get('uploaded_file_name') != uploaded_file.name:
-                    st.session_state['df'] = df
-                    st.session_state['uploaded_file_name'] = uploaded_file.name
-                    # Mark step 1 as completed (move to step 2)
-                    if st.session_state['current_step'] == 1:
-                        st.session_state['current_step'] = 2
-                        render_success(f"Dataset loaded: {df.shape[0]} rows x {df.shape[1]} columns")
-                        st.rerun()  # Rerun to update step indicator
-                render_success(f"Dataset loaded: {df.shape[0]} rows x {df.shape[1]} columns")
+                df = pd.read_csv("dataset.csv")
+                st.session_state['df'] = df
+                st.session_state['uploaded_file_name'] = 'dataset.csv'
+                if st.session_state['current_step'] == 1:
+                    st.session_state['current_step'] = 2
+                st.rerun()
             except Exception as e:
-                st.error(f"Error: {e}")
-                return
+                st.error(f"Error loading sample data: {e}")
+    
+    # File uploader
+    uploaded_file = st.file_uploader("Upload your CSV dataset", type=['csv'], label_visibility="collapsed")
+    
+    if uploaded_file is not None:
+        try:
+            df = pd.read_csv(uploaded_file)
+            # Only save to session if it's a new file or first upload
+            if st.session_state['df'] is None or 'uploaded_file_name' not in st.session_state or st.session_state.get('uploaded_file_name') != uploaded_file.name:
+                st.session_state['df'] = df
+                st.session_state['uploaded_file_name'] = uploaded_file.name
+                # Mark step 1 as completed (move to step 2)
+                if st.session_state['current_step'] == 1:
+                    st.session_state['current_step'] = 2
+                    render_success(f"Dataset loaded: {df.shape[0]} rows x {df.shape[1]} columns")
+                    st.rerun()  # Rerun to update step indicator
+            render_success(f"Dataset loaded: {df.shape[0]} rows x {df.shape[1]} columns")
+        except Exception as e:
+            st.error(f"Error: {e}")
+            return
     
     if st.session_state['df'] is None:
         render_info("Upload file CSV untuk memulai analisis clustering")
@@ -123,28 +148,31 @@ def main():
         )
     
     with col3:
-        dr_components = None
-        n_components = None
-        if dr_method in ['PCA', 'PCA -> T-SNE']:
-            st.markdown("**Components**")
-            dr_components = st.radio(
-                "components",
-                ['Auto (95% variance)', 'Manual'],
-                index=0,
-                label_visibility="collapsed"
+        st.markdown("**Components**")
+        dr_components = st.radio(
+            "components",
+            ['Auto (95% variance)', 'Manual'],
+            index=0,
+            label_visibility="collapsed"
+        )
+        if dr_components == 'Manual':
+            # Hitung jumlah fitur numerik (kolom 5 ke atas + IPK_Skala)
+            num_features = len(df.columns[5:])  # Fitur mulai dari kolom ke-5
+            # Maksimum komponen tidak boleh melebihi jumlah fitur atau sampel
+            max_components = min(num_features, df.shape[0] - 1)
+            default_components = min(3, max_components)
+            n_components = st.slider(
+                "Number of Components", 
+                2, 
+                max_components, 
+                default_components,
+                help=f"Max: {max_components} komponen (dari {num_features} fitur numerik)"
             )
-            if dr_components == 'Manual':
-                n_components = st.slider("Number of Components", 2, 10, 3)
+        else:
+            n_components = None
     
-    # t-SNE parameters if needed
+    # No additional parameters needed for PCA
     dr_params = {}
-    if dr_method in ['T-SNE', 'PCA -> T-SNE']:
-        col1, col2 = st.columns(2)
-        with col1:
-            perplexity = st.slider("Perplexity", 5, 50, DEFAULT_PARAMS['perplexity_default'])
-        with col2:
-            learning_rate = st.slider("Learning Rate", 10, 1000, DEFAULT_PARAMS['learning_rate_default'])
-        dr_params = {'perplexity': perplexity, 'learning_rate': learning_rate}
     
     # Run Preprocessing Button
     if st.button("Run Preprocessing", key="preprocess_btn", use_container_width=True):
@@ -223,8 +251,8 @@ def main():
             else:
                 n_clusters = None  # Will be determined by optimal k analysis
         elif clustering_method == 'hierarchical':
-            st.markdown("**Number of Clusters**")
-            n_clusters = st.slider("n_clusters", 2, 8, DEFAULT_PARAMS['n_clusters_default'], label_visibility="collapsed")
+            # No parameters needed for hierarchical
+            n_clusters = None
             use_optimal_k = False
         else:
             n_clusters = None
@@ -233,8 +261,54 @@ def main():
     with col3:
         if clustering_method == 'dbscan':
             st.markdown("**DBSCAN Parameters**")
-            eps = st.slider("EPS", 0.1, 2.0, DEFAULT_PARAMS['eps_default'], 0.1)
-            min_samples = st.slider("Min Samples", 2, 10, DEFAULT_PARAMS['min_samples_default'])
+            
+            # Hitung rekomendasi eps jika belum ada di session state
+            if 'dbscan_recommendation' not in st.session_state or st.session_state.get('last_X_reduced_shape') != st.session_state.get('X_reduced', np.array([])).shape:
+                if 'X_reduced' in st.session_state:
+                    clustering_engine_temp = ClusteringEngine()
+                    min_samples_for_rec = st.session_state.get('dbscan_min_samples', 5)
+                    st.session_state['dbscan_recommendation'] = clustering_engine_temp.recommend_dbscan_eps(
+                        st.session_state['X_reduced'], 
+                        min_samples=min_samples_for_rec
+                    )
+                    st.session_state['last_X_reduced_shape'] = st.session_state['X_reduced'].shape
+            
+            # Tampilkan rekomendasi jika ada
+            if 'dbscan_recommendation' in st.session_state:
+                rec = st.session_state['dbscan_recommendation']
+                st.info(f"💡 **Recommended EPS**: {rec['recommended_eps']:.3f}\n\n"
+                       f"Range: {rec['min_eps']:.3f} - {rec['max_eps']:.3f}")
+                
+                # Tampilkan k-distance graph dalam expander
+                with st.expander("📊 View K-Distance Graph", expanded=False):
+                    from utils.analysis import ClusterAnalyzer
+                    analyzer = ClusterAnalyzer()
+                    fig = analyzer.plot_k_distance_graph(rec['k_distances'], rec['recommended_eps'])
+                    st.plotly_chart(fig, use_container_width=True)
+                    st.markdown("""
+                        **How to use this graph:**
+                        - The "elbow" in the curve suggests a good EPS value
+                        - Points below the red line will likely form clusters
+                        - Points above the red line may be considered noise
+                    """)
+                
+                # Gunakan range yang lebih luas berdasarkan data
+                eps_min = max(0.01, rec['min_eps'] * 0.5)
+                eps_max = rec['max_eps'] * 2.0
+                eps_default = rec['recommended_eps']
+            else:
+                # Fallback jika belum ada preprocessing
+                eps_min = 0.1
+                eps_max = 10.0
+                eps_default = DEFAULT_PARAMS['eps_default']
+            
+            eps = st.slider("EPS (Epsilon)", eps_min, eps_max, eps_default, 
+                          help="Maximum distance between two samples to be considered neighbors")
+            min_samples = st.slider("Min Samples", 2, 20, DEFAULT_PARAMS['min_samples_default'],
+                                  help="Minimum number of samples in a neighborhood to form a core point")
+            
+            # Store min_samples untuk recalculation
+            st.session_state['dbscan_min_samples'] = min_samples
         else:
             eps = None
             min_samples = None
@@ -242,6 +316,15 @@ def main():
     # Run Clustering Button
     if st.button("✨ Run Clustering Analysis", key="cluster_btn", use_container_width=True):
         clustering_engine = ClusteringEngine()
+        
+        # Clear previous session state to avoid UI persistence bugs
+        # Bug Fix 1: Clear k_analysis when switching methods or not using optimal K
+        if clustering_method != 'kmeans' or not use_optimal_k:
+            if 'k_analysis' in st.session_state:
+                del st.session_state['k_analysis']
+        
+        # Bug Fix 2: Reset cluster navigation index when re-running clustering
+        st.session_state['current_cluster_index'] = 0
         
         with st.spinner("Performing clustering analysis..."):
             results = render_clustering(

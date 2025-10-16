@@ -15,14 +15,14 @@ def render_results(clustering_engine, analyzer, X_reduced, dr_info, df, feature_
     """Render results with modern styling"""
     
     if clustering_engine.clustering_results is None:
-        st.info("🚀 Run clustering first to see results!")
+        st.info("Run clustering first to see results!")
         return
     
     labels = clustering_engine.clustering_results['labels']
     method_name = dr_info['method']
     
-    # Show K Analysis if available (from optimal k selection)
-    if 'k_analysis' in st.session_state:
+    # Show K Analysis if available (from optimal k selection) - ONLY FOR KMEANS
+    if 'k_analysis' in st.session_state and clustering_engine.clustering_results['method'] == 'kmeans':
         st.markdown("### Optimal Cluster Analysis")
         k_analysis = st.session_state['k_analysis']
         
@@ -106,14 +106,38 @@ def render_results(clustering_engine, analyzer, X_reduced, dr_info, df, feature_
     colors = px.colors.qualitative.Set2
     
     # Radio button untuk memilih jenis plot
+    method_name_lower = clustering_engine.clustering_results['method']
+    
+    if method_name_lower == 'hierarchical':
+        # For hierarchical, show Dendrogram first, then 2D/3D
+        if X_reduced.shape[1] >= 3:
+            plot_options = ["Dendrogram", "2D Plot", "3D Plot"]
+        else:
+            plot_options = ["Dendrogram", "2D Plot"]
+    else:
+        # For other methods, show 2D/3D only
+        plot_options = ["2D Plot", "3D Plot"] if X_reduced.shape[1] >= 3 else ["2D Plot"]
+    
     plot_type = st.radio(
         "Select visualization type:",
-        ["2D Plot", "3D Plot"] if X_reduced.shape[1] >= 3 else ["2D Plot"],
+        plot_options,
         horizontal=True,
         key="plot_type_radio"
     )
     
-    if plot_type == "2D Plot":
+    if plot_type == "Dendrogram":
+        # Show dendrogram for hierarchical clustering
+        st.markdown("#### Dendrogram - Hierarchical Structure")
+        
+        with st.spinner("Generating dendrogram..."):
+            dendrogram_fig, Z = clustering_engine.create_dendrogram(
+                X_reduced, 
+                linkage='ward',
+                n_clusters=n_clusters
+            )
+            st.plotly_chart(dendrogram_fig, use_container_width=True, config={'staticPlot': True})
+    
+    elif plot_type == "2D Plot":
         # 2D Visualization - Static Image
         fig_2d = go.Figure()
         
@@ -181,7 +205,7 @@ def render_results(clustering_engine, analyzer, X_reduced, dr_info, df, feature_
         # Make it static (no interaction)
         st.plotly_chart(fig_2d, use_container_width=True, config={'staticPlot': True})
         
-    else:  # 3D Plot
+    elif plot_type == "3D Plot":
         if X_reduced.shape[1] >= 3:
             fig_3d = go.Figure()
             
@@ -397,7 +421,16 @@ def render_results(clustering_engine, analyzer, X_reduced, dr_info, df, feature_
     st.markdown("### Export Results")
     
     if profiles:
-        results_df = profiles['data_with_clusters']
+        results_df = profiles['data_with_clusters'].copy()
+        
+        # Anonymize name column
+        name_cols = [col for col in results_df.columns if 'nama' in col.lower()]
+        for col in name_cols:
+            results_df[col] = 'Anonim'
+        
+        # Remove IPK_Skala column if exists
+        if 'IPK_Skala' in results_df.columns:
+            results_df = results_df.drop('IPK_Skala', axis=1)
         
         col1, col2 = st.columns(2)
         
@@ -408,10 +441,11 @@ def render_results(clustering_engine, analyzer, X_reduced, dr_info, df, feature_
                 data=csv,
                 file_name="clustering_results.csv",
                 mime="text/csv",
-                use_container_width=True
+                use_container_width=True,
+                key="download_results_csv_btn"
             )
         
         with col2:
             # Show preview of results
-            with st.expander("👁️ Preview Results Data"):
+            with st.expander("Preview Results Data"):
                 st.dataframe(results_df.head(10), use_container_width=True)

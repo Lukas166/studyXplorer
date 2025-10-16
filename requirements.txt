@@ -1,13 +1,8 @@
-# Core Framework
 streamlit==1.37.1
 pandas==2.2.3
 numpy==1.26.4
-
-# Machine Learning & Scientific Computing
 scikit-learn==1.4.2
 scipy==1.11.4
-
-# Visualization
 matplotlib==3.9.2
 seaborn==0.13.2
 plotly==5.24.1
