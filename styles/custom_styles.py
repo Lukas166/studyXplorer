@@ -478,26 +478,22 @@ CUSTOM_CSS = """
     }
     
     /* Tombol "Browse files" di dalam file uploader */
+    /* Biarkan mengikuti warna sistem/tema Streamlit (tanpa override warna) */
     .stFileUploader [data-testid="stFileUploadDropzone"] button {
-        background-color: #000000 !important;
-        color: #ffffff !important; /* Teks menjadi putih */
-        border: none !important;
         border-radius: 8px !important;
         padding: 0.75rem 1.5rem !important;
     }
-    /* Pastikan teks/icon di dalam tombol juga putih */
+    /* Jangan paksa warna child agar mengikuti tema */
     .stFileUploader [data-testid="stFileUploadDropzone"] button *,
     .stFileUploader [data-testid="stFileUploadDropzone"] button a,
     .stFileUploader [data-testid="stFileUploadDropzone"] button span,
     .stFileUploader [data-testid="stFileUploadDropzone"] button p,
     .stFileUploader [data-testid="stFileUploadDropzone"] button svg {
-        color: #ffffff !important;
-        fill: #ffffff !important;
+        /* no color override */
     }
     
     .stFileUploader [data-testid="stFileUploadDropzone"] button:hover {
-        background-color: #1a1a1a !important;
-        color: #ffffff !important;
+        /* follow theme */
     }
 
     /* Tombol 'X' (hapus file) kembali ke normal */
@@ -765,24 +761,22 @@ CUSTOM_CSS = """
     }
     
     /* Tombol "Browse files" di dalam file uploader */
+    /* Biarkan mengikuti warna sistem/tema Streamlit */
     .stFileUploader [data-testid="stFileUploadDropzone"] button {
-        background-color: #000000 !important;
-        color: #ffffff !important; /* Pastikan teks berwarna putih */
+        /* no color/background override */
         border: none !important;
     }
-    /* Pastikan seluruh child di dalam tombol mewarisi warna putih */
+    /* Jangan paksa warna child agar mengikuti tema */
     .stFileUploader [data-testid="stFileUploadDropzone"] button *,
     .stFileUploader [data-testid="stFileUploadDropzone"] button a,
     .stFileUploader [data-testid="stFileUploadDropzone"] button span,
     .stFileUploader [data-testid="stFileUploadDropzone"] button p,
     .stFileUploader [data-testid="stFileUploadDropzone"] button svg {
-        color: #ffffff !important;
-        fill: #ffffff !important;
+        /* no color override */
     }
     
     .stFileUploader [data-testid="stFileUploadDropzone"] button:hover {
-        background-color: #1a1a1a !important;
-        color: #ffffff !important;
+        /* follow theme */
     }
 
     /* Mengembalikan tombol 'X' (hapus file) ke keadaan normal (transparan) tanpa efek hover */
