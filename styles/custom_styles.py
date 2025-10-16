@@ -483,13 +483,14 @@ CUSTOM_CSS = """
         border-radius: 8px !important;
         padding: 0.75rem 1.5rem !important;
     }
-    /* Jangan paksa warna child agar mengikuti tema */
+    /* Pastikan teks/icon di dalam tombol mengikuti tema (override aturan global 'primary/accent') */
+    .stFileUploader [data-testid="stFileUploadDropzone"] button,
     .stFileUploader [data-testid="stFileUploadDropzone"] button *,
-    .stFileUploader [data-testid="stFileUploadDropzone"] button a,
-    .stFileUploader [data-testid="stFileUploadDropzone"] button span,
-    .stFileUploader [data-testid="stFileUploadDropzone"] button p,
-    .stFileUploader [data-testid="stFileUploadDropzone"] button svg {
-        /* no color override */
+    .stFileUploader [data-testid="stFileUploadDropzone"] button [class*="primary"],
+    .stFileUploader [data-testid="stFileUploadDropzone"] button [class*="accent"],
+    .stFileUploader [data-testid="stFileUploadDropzone"] button [class*="secondary"] {
+        color: inherit !important;
+        fill: currentColor !important;
     }
     
     .stFileUploader [data-testid="stFileUploadDropzone"] button:hover {
@@ -665,6 +666,40 @@ CUSTOM_CSS = """
     .stMarkdown {
         color: #000000;
     }
+
+    /* Responsive: move step indicator to top-center on mobile */
+    @media (max-width: 768px) {
+        /* Center the step indicator at the top with hanging style */
+        .step-sidebar {
+            position: sticky;
+            top: 5rem; /* requested margin-top */
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            width: 100%;
+            max-width: 360px;
+            display: flex;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .step-item-sidebar {
+            margin-bottom: 0;
+            align-items: center;
+            gap: 1rem;
+        }
+        /* Layout items horizontally */
+        .step-sidebar { display: flex; gap: 1.25rem; }
+        .step-item-sidebar { flex-direction: column; }
+        .step-label { text-align: center; font-size: 0.8rem; }
+        /* Hide vertical connector lines on mobile */
+        .step-item-sidebar:not(:last-child)::before { display: none; }
+        /* Adjust main container top padding to avoid overlap */
+        .main .block-container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+            padding-top: 5.5rem; /* space for top hanging steps */
+        }
+    }
     
     /* Labels */
     label {
@@ -787,6 +822,26 @@ CUSTOM_CSS = """
 
     .stFileUploader [data-testid="stFileUploaderDeleteBtn"]:hover {
         background-color: transparent !important; /* Tidak ada perubahan background saat hover */
+    }
+
+    /* Final override: ensure 'Browse files' text follows theme (after global primary/accent rules) */
+    .stFileUploader [data-testid="stFileUploadDropzone"] button,
+    .stFileUploader [data-testid="stFileUploadDropzone"] button *,
+    .stFileUploader [data-testid="stFileUploadDropzone"] button [class*="primary"],
+    .stFileUploader [data-testid="stFileUploadDropzone"] button [class*="accent"],
+    .stFileUploader [data-testid="stFileUploadDropzone"] button [class*="secondary"] {
+        color: var(--text-color) !important;
+        fill: currentColor !important;
+    }
+
+    /* Dark mode: force readable contrast for 'Browse files' */
+    @media (prefers-color-scheme: dark) {
+        .stFileUploader [data-testid="stFileUploadDropzone"] button,
+        .stFileUploader [data-testid="stFileUploadDropzone"] button *,
+        .stFileUploader [data-testid="stFileUploadDropzone"] button svg {
+            color: #ffffff !important;
+            fill: #ffffff !important;
+        }
     }
 </style>
 """
