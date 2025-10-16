@@ -383,7 +383,7 @@ class DBSCAN:
 
 
 class AgglomerativeClustering:
-    """Agglomerative Hierarchical Clustering"""
+    """Agglomerative Hierarchical Clustering - Full from scratch implementation"""
     
     def __init__(self, n_clusters=2, linkage='ward', distance_threshold=None):
         self.n_clusters = n_clusters
@@ -391,124 +391,137 @@ class AgglomerativeClustering:
         self.distance_threshold = distance_threshold
         self.labels_ = None
         self.n_clusters_ = None
-        self.children_ = None
-        self.distances_ = None
     
-    def _compute_distance_matrix(self, X):
-        """Compute pairwise distance matrix"""
-        n_samples = len(X)
-        distances = np.zeros((n_samples, n_samples))
-        for i in range(n_samples):
-            for j in range(i + 1, n_samples):
-                dist = np.sqrt(np.sum((X[i] - X[j]) ** 2))
-                distances[i, j] = dist
-                distances[j, i] = dist
-        return distances
-    
-    def _merge_clusters(self, clusters, cluster_distances, idx1, idx2):
-        """Merge two clusters and update distances"""
-        # Create new cluster
-        new_cluster = clusters[idx1] + clusters[idx2]
+    def _compute_linkage_distance(self, X, cluster_i, cluster_j):
+        """Compute distance between two clusters based on linkage method"""
+        if self.linkage == 'single':
+            # Single linkage: minimum distance between any pair of points
+            min_dist = np.inf
+            for p1 in cluster_i:
+                for p2 in cluster_j:
+                    dist = np.sqrt(np.sum((X[p1] - X[p2]) ** 2))
+                    if dist < min_dist:
+                        min_dist = dist
+            return min_dist
         
-        # Remove old clusters (remove larger index first to avoid index shift)
-        if idx1 > idx2:
-            clusters.pop(idx1)
-            clusters.pop(idx2)
-        else:
-            clusters.pop(idx2)
-            clusters.pop(idx1)
+        elif self.linkage == 'complete':
+            # Complete linkage: maximum distance between any pair of points
+            max_dist = 0.0
+            for p1 in cluster_i:
+                for p2 in cluster_j:
+                    dist = np.sqrt(np.sum((X[p1] - X[p2]) ** 2))
+                    if dist > max_dist:
+                        max_dist = dist
+            return max_dist
         
-        # Add new cluster
-        clusters.append(new_cluster)
+        elif self.linkage == 'average':
+            # Average linkage: mean distance between all pairs
+            total_dist = 0.0
+            count = 0
+            for p1 in cluster_i:
+                for p2 in cluster_j:
+                    dist = np.sqrt(np.sum((X[p1] - X[p2]) ** 2))
+                    total_dist += dist
+                    count += 1
+            return total_dist / count if count > 0 else 0.0
         
-        return new_cluster
-    
-    def _update_distances(self, X, clusters, cluster_distances, new_cluster_idx):
-        """Update distance matrix after merge"""
-        new_cluster = clusters[new_cluster_idx]
-        n_clusters = len(clusters)
-        
-        for i in range(n_clusters):
-            if i == new_cluster_idx:
-                cluster_distances[i, new_cluster_idx] = 0
-                cluster_distances[new_cluster_idx, i] = 0
-                continue
+        else:  # ward
+            # Ward's method: minimum variance criterion
+            # Distance = sqrt(2 * n_i * n_j / (n_i + n_j)) * ||center_i - center_j||
+            n_i = len(cluster_i)
+            n_j = len(cluster_j)
             
-            cluster_i = clusters[i]
+            # Compute centroids
+            center_i = np.mean([X[p] for p in cluster_i], axis=0)
+            center_j = np.mean([X[p] for p in cluster_j], axis=0)
             
-            if self.linkage == 'single':
-                # Minimum distance between any points
-                dist = min(np.sqrt(np.sum((X[p1] - X[p2]) ** 2)) 
-                          for p1 in cluster_i for p2 in new_cluster)
-            elif self.linkage == 'complete':
-                # Maximum distance between any points
-                dist = max(np.sqrt(np.sum((X[p1] - X[p2]) ** 2)) 
-                          for p1 in cluster_i for p2 in new_cluster)
-            elif self.linkage == 'average':
-                # Average distance between all pairs
-                distances = [np.sqrt(np.sum((X[p1] - X[p2]) ** 2)) 
-                           for p1 in cluster_i for p2 in new_cluster]
-                dist = np.mean(distances)
-            else:  # ward
-                # Ward's method: increase in variance
-                cluster_i_center = np.mean(X[cluster_i], axis=0)
-                new_cluster_center = np.mean(X[new_cluster], axis=0)
-                dist = np.sqrt(np.sum((cluster_i_center - new_cluster_center) ** 2))
-                dist *= np.sqrt((len(cluster_i) * len(new_cluster)) / (len(cluster_i) + len(new_cluster)))
+            # Squared Euclidean distance between centroids
+            squared_dist = np.sum((center_i - center_j) ** 2)
             
-            cluster_distances[i, new_cluster_idx] = dist
-            cluster_distances[new_cluster_idx, i] = dist
+            # Ward's distance formula
+            ward_dist = np.sqrt(2.0 * n_i * n_j / (n_i + n_j) * squared_dist)
+            
+            return ward_dist
     
     def fit(self, X):
         """Fit Agglomerative Clustering model"""
         X = np.array(X, dtype=np.float64)
         n_samples = len(X)
         
-        # Initialize each point as its own cluster
-        clusters = [[i] for i in range(n_samples)]
+        # Initialize: each point is its own cluster
+        # Use dictionary to map cluster_id -> list of point indices
+        clusters = {i: [i] for i in range(n_samples)}
         
-        # Compute initial distance matrix
-        cluster_distances = self._compute_distance_matrix(X)
+        # Initialize distance matrix between clusters using cluster IDs
+        distances = {}
         
-        # Store merge history for dendrogram
-        merge_history = []
-        merge_distances = []
+        # Compute initial pairwise distances
+        cluster_ids = list(clusters.keys())
+        for i in range(len(cluster_ids)):
+            for j in range(i + 1, len(cluster_ids)):
+                id_i, id_j = cluster_ids[i], cluster_ids[j]
+                dist = self._compute_linkage_distance(X, clusters[id_i], clusters[id_j])
+                distances[(id_i, id_j)] = dist
         
-        # Merge clusters until we reach desired number
-        target_clusters = self.n_clusters if self.distance_threshold is None else 1
+        # Merge clusters iteratively
+        next_cluster_id = n_samples
         
-        while len(clusters) > target_clusters:
-            # Find closest pair of clusters
-            n_clusters = len(clusters)
-            min_dist = np.inf
-            merge_i, merge_j = 0, 1
+        while len(clusters) > 1:
+            # Check stopping criteria
+            if self.distance_threshold is None:
+                if len(clusters) <= self.n_clusters:
+                    break
+            else:
+                # For hierarchical with distance_threshold, ensure minimum 2 clusters
+                if len(clusters) <= 2:
+                    break
+                # Find minimum distance
+                if not distances:
+                    break
+                min_dist = min(distances.values())
+                if min_dist > self.distance_threshold:
+                    break
             
-            for i in range(n_clusters):
-                for j in range(i + 1, n_clusters):
-                    if cluster_distances[i, j] < min_dist:
-                        min_dist = cluster_distances[i, j]
-                        merge_i, merge_j = i, j
+            # Find the pair of clusters with minimum distance
+            min_pair = min(distances.items(), key=lambda x: x[1])
+            (cluster_i, cluster_j), min_dist = min_pair
             
-            # Check distance threshold
-            if self.distance_threshold is not None and min_dist > self.distance_threshold:
-                break
+            # Merge cluster_i and cluster_j into a new cluster
+            merged_cluster = clusters[cluster_i] + clusters[cluster_j]
             
-            # Record merge
-            merge_history.append((merge_i, merge_j))
-            merge_distances.append(min_dist)
+            # Remove old distance entries involving cluster_i or cluster_j
+            keys_to_remove = []
+            for key in distances.keys():
+                if cluster_i in key or cluster_j in key:
+                    keys_to_remove.append(key)
+            for key in keys_to_remove:
+                del distances[key]
             
-            # Merge clusters
-            new_cluster = self._merge_clusters(clusters, cluster_distances, merge_i, merge_j)
+            # Remove the two old clusters
+            del clusters[cluster_i]
+            del clusters[cluster_j]
             
-            # Update distance matrix
-            new_idx = len(clusters) - 1
-            self._update_distances(X, clusters, cluster_distances, new_idx)
+            # Add the new merged cluster
+            clusters[next_cluster_id] = merged_cluster
+            
+            # Compute distances from new cluster to all remaining clusters
+            for other_id in clusters.keys():
+                if other_id == next_cluster_id:
+                    continue
+                dist = self._compute_linkage_distance(X, clusters[next_cluster_id], clusters[other_id])
+                # Always store with smaller ID first for consistency
+                if next_cluster_id < other_id:
+                    distances[(next_cluster_id, other_id)] = dist
+                else:
+                    distances[(other_id, next_cluster_id)] = dist
+            
+            next_cluster_id += 1
         
-        # Assign labels
+        # Assign final labels
         self.labels_ = np.zeros(n_samples, dtype=int)
-        for cluster_id, cluster in enumerate(clusters):
-            for point_idx in cluster:
-                self.labels_[cluster_id] = cluster_id
+        for cluster_id, (cluster_key, cluster_points) in enumerate(clusters.items()):
+            for point_idx in cluster_points:
+                self.labels_[point_idx] = cluster_id
         
         self.n_clusters_ = len(clusters)
         

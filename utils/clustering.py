@@ -1,6 +1,6 @@
 import numpy as np
 from utils.custom_algorithms import (
-    KMeans, AgglomerativeClustering, DBSCAN, StandardScaler,
+    KMeans, DBSCAN, StandardScaler, AgglomerativeClustering,
     silhouette_score, davies_bouldin_score, calinski_harabasz_score,
     linkage as scipy_linkage, dendrogram, fcluster
 )
