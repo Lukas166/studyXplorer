@@ -1,6 +1,5 @@
 import numpy as np
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-from sklearn.decomposition import PCA
+from utils.custom_algorithms import StandardScaler, MinMaxScaler, RobustScaler, PCA
 
 class ClusteringPreprocessor:
     def __init__(self):

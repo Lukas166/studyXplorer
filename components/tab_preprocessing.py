@@ -29,7 +29,8 @@ def render_preprocessing(preprocessor, df, scaling_method, dr_method, dr_compone
     ]
     
     if dr_info['explained_variance'] is not None:
-        cumulative_variance = np.cumsum(dr_info['explained_variance'])
+        # Use explained_variance_ratio (already normalized to sum to 1)
+        cumulative_variance = dr_info['cumulative_variance']
         metrics.append({
             "label": "Variance Explained",
             "value": f"{cumulative_variance[-1]:.1%}",
@@ -57,7 +58,7 @@ def render_preprocessing(preprocessor, df, scaling_method, dr_method, dr_compone
         # Cumulative variance
         fig.add_trace(go.Scatter(
             x=[f'PC{i+1}' for i in range(dr_info['n_components'])],
-            y=np.cumsum(dr_info['explained_variance']),
+            y=dr_info['cumulative_variance'],
             name='Cumulative Variance',
             yaxis='y2',
             line=dict(color='rgb(118, 75, 162)', width=3),

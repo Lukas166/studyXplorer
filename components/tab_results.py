@@ -20,6 +20,8 @@ def render_results(clustering_engine, analyzer, X_reduced, dr_info, df, feature_
     
     labels = clustering_engine.clustering_results['labels']
     method_name = dr_info['method']
+    # Clustering method (kmeans, hierarchical, dbscan)
+    method_name_lower = clustering_engine.clustering_results['method']
     
     # Show K Analysis if available (from optimal k selection) - ONLY FOR KMEANS
     if 'k_analysis' in st.session_state and clustering_engine.clustering_results['method'] == 'kmeans':
@@ -98,6 +100,25 @@ def render_results(clustering_engine, analyzer, X_reduced, dr_info, df, feature_
         })
     
     render_metric_grid(metrics)
+
+    # Extra diagnostics for DBSCAN: core/border/noise counts
+    if method_name_lower == 'dbscan':
+        try:
+            db_model = clustering_engine.clustering_results.get('model')
+            core_samples_mask_diag = np.zeros_like(labels, dtype=bool)
+            if hasattr(db_model, 'core_sample_indices_'):
+                core_samples_mask_diag[db_model.core_sample_indices_] = True
+            noise_mask_diag = labels == -1
+            border_mask_diag = (~noise_mask_diag) & (~core_samples_mask_diag)
+
+            diag_metrics = [
+                {"label": "Core Points", "value": int(np.sum(core_samples_mask_diag)), "icon": "🔵"},
+                {"label": "Border Points", "value": int(np.sum(border_mask_diag)), "icon": "⚪"},
+                {"label": "Noise Points", "value": int(np.sum(noise_mask_diag)), "icon": "✖"}
+            ]
+            render_metric_grid(diag_metrics)
+        except Exception:
+            pass
     
     # Visualizations
     st.markdown("### Cluster Visualizations")
@@ -106,7 +127,17 @@ def render_results(clustering_engine, analyzer, X_reduced, dr_info, df, feature_
     colors = px.colors.qualitative.Set2
     
     # Radio button untuk memilih jenis plot
-    method_name_lower = clustering_engine.clustering_results['method']
+
+    # For DBSCAN, compute masks for core/border/noise to improve interpretability
+    core_samples_mask = None
+    if method_name_lower == 'dbscan':
+        try:
+            db_model = clustering_engine.clustering_results.get('model')
+            core_samples_mask = np.zeros_like(labels, dtype=bool)
+            if hasattr(db_model, 'core_sample_indices_'):
+                core_samples_mask[db_model.core_sample_indices_] = True
+        except Exception:
+            core_samples_mask = None
     
     if method_name_lower == 'hierarchical':
         # For hierarchical, show Dendrogram first, then 2D/3D
@@ -143,17 +174,49 @@ def render_results(clustering_engine, analyzer, X_reduced, dr_info, df, feature_
         
         for cluster_id in unique_labels:
             mask = labels == cluster_id
-            fig_2d.add_trace(go.Scatter(
-                x=X_reduced[mask, 0],
-                y=X_reduced[mask, 1],
-                mode='markers',
-                name=f'Cluster {cluster_id}',
-                marker=dict(
-                    size=10,
-                    color=colors[cluster_id % len(colors)],
-                    line=dict(width=1, color='white')
-                )
-            ))
+            if method_name_lower == 'dbscan' and core_samples_mask is not None:
+                core_mask = mask & core_samples_mask
+                border_mask = mask & (~core_samples_mask)
+
+                # Core points (filled)
+                fig_2d.add_trace(go.Scatter(
+                    x=X_reduced[core_mask, 0],
+                    y=X_reduced[core_mask, 1],
+                    mode='markers',
+                    name=f'Cluster {cluster_id} (core)',
+                    marker=dict(
+                        size=10,
+                        color=colors[cluster_id % len(colors)],
+                        line=dict(width=1, color='white'),
+                        symbol='circle'
+                    )
+                ))
+
+                # Border points (hollow)
+                fig_2d.add_trace(go.Scatter(
+                    x=X_reduced[border_mask, 0],
+                    y=X_reduced[border_mask, 1],
+                    mode='markers',
+                    name=f'Cluster {cluster_id} (border)',
+                    marker=dict(
+                        size=10,
+                        color=colors[cluster_id % len(colors)],
+                        line=dict(width=1.5, color=colors[cluster_id % len(colors)]),
+                        symbol='circle-open'
+                    )
+                ))
+            else:
+                fig_2d.add_trace(go.Scatter(
+                    x=X_reduced[mask, 0],
+                    y=X_reduced[mask, 1],
+                    mode='markers',
+                    name=f'Cluster {cluster_id}',
+                    marker=dict(
+                        size=10,
+                        color=colors[cluster_id % len(colors)],
+                        line=dict(width=1, color='white')
+                    )
+                ))
         
         # Add noise points if any
         if np.any(labels == -1):
@@ -211,18 +274,52 @@ def render_results(clustering_engine, analyzer, X_reduced, dr_info, df, feature_
             
             for cluster_id in unique_labels:
                 mask = labels == cluster_id
-                fig_3d.add_trace(go.Scatter3d(
-                    x=X_reduced[mask, 0],
-                    y=X_reduced[mask, 1],
-                    z=X_reduced[mask, 2],
-                    mode='markers',
-                    name=f'Cluster {cluster_id}',
-                    marker=dict(
-                        size=6,
-                        color=colors[cluster_id % len(colors)],
-                        line=dict(width=0.5, color='white')
-                    )
-                ))
+                if method_name_lower == 'dbscan' and core_samples_mask is not None:
+                    core_mask = mask & core_samples_mask
+                    border_mask = mask & (~core_samples_mask)
+
+                    # Core points (filled)
+                    fig_3d.add_trace(go.Scatter3d(
+                        x=X_reduced[core_mask, 0],
+                        y=X_reduced[core_mask, 1],
+                        z=X_reduced[core_mask, 2],
+                        mode='markers',
+                        name=f'Cluster {cluster_id} (core)',
+                        marker=dict(
+                            size=6,
+                            color=colors[cluster_id % len(colors)],
+                            line=dict(width=0.5, color='white'),
+                            symbol='circle'
+                        )
+                    ))
+
+                    # Border points (hollow)
+                    fig_3d.add_trace(go.Scatter3d(
+                        x=X_reduced[border_mask, 0],
+                        y=X_reduced[border_mask, 1],
+                        z=X_reduced[border_mask, 2],
+                        mode='markers',
+                        name=f'Cluster {cluster_id} (border)',
+                        marker=dict(
+                            size=6,
+                            color=colors[cluster_id % len(colors)],
+                            line=dict(width=1.0, color=colors[cluster_id % len(colors)]),
+                            symbol='circle-open'
+                        )
+                    ))
+                else:
+                    fig_3d.add_trace(go.Scatter3d(
+                        x=X_reduced[mask, 0],
+                        y=X_reduced[mask, 1],
+                        z=X_reduced[mask, 2],
+                        mode='markers',
+                        name=f'Cluster {cluster_id}',
+                        marker=dict(
+                            size=6,
+                            color=colors[cluster_id % len(colors)],
+                            line=dict(width=0.5, color='white')
+                        )
+                    ))
             
             if np.any(labels == -1):
                 noise_mask = labels == -1
