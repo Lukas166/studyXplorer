@@ -485,6 +485,15 @@ CUSTOM_CSS = """
         border-radius: 8px !important;
         padding: 0.75rem 1.5rem !important;
     }
+    /* Pastikan teks/icon di dalam tombol juga putih */
+    .stFileUploader [data-testid="stFileUploadDropzone"] button *,
+    .stFileUploader [data-testid="stFileUploadDropzone"] button a,
+    .stFileUploader [data-testid="stFileUploadDropzone"] button span,
+    .stFileUploader [data-testid="stFileUploadDropzone"] button p,
+    .stFileUploader [data-testid="stFileUploadDropzone"] button svg {
+        color: #ffffff !important;
+        fill: #ffffff !important;
+    }
     
     .stFileUploader [data-testid="stFileUploadDropzone"] button:hover {
         background-color: #1a1a1a !important;
@@ -760,6 +769,15 @@ CUSTOM_CSS = """
         background-color: #000000 !important;
         color: #ffffff !important; /* Pastikan teks berwarna putih */
         border: none !important;
+    }
+    /* Pastikan seluruh child di dalam tombol mewarisi warna putih */
+    .stFileUploader [data-testid="stFileUploadDropzone"] button *,
+    .stFileUploader [data-testid="stFileUploadDropzone"] button a,
+    .stFileUploader [data-testid="stFileUploadDropzone"] button span,
+    .stFileUploader [data-testid="stFileUploadDropzone"] button p,
+    .stFileUploader [data-testid="stFileUploadDropzone"] button svg {
+        color: #ffffff !important;
+        fill: #ffffff !important;
     }
     
     .stFileUploader [data-testid="stFileUploadDropzone"] button:hover {
