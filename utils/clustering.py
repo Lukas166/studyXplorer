@@ -55,43 +55,7 @@ class ClusteringEngine:
         
         return np.argmax(distances)
     
-    def recommend_dbscan_eps(self, X_reduced, min_samples=5):
-        """Rekomendasikan nilai eps optimal untuk DBSCAN menggunakan k-distance graph"""
-        from sklearn.neighbors import NearestNeighbors
-        
-        # Hitung k-nearest neighbors (k = min_samples)
-        neighbors = NearestNeighbors(n_neighbors=min_samples)
-        neighbors.fit(X_reduced)
-        distances, indices = neighbors.kneighbors(X_reduced)
-        
-        # Ambil distance ke neighbor terjauh (min_samples-th neighbor)
-        k_distances = np.sort(distances[:, -1])
-        
-        # Cari "elbow point" di k-distance graph
-        # Gunakan metode yang sama seperti find_elbow_point
-        n = len(k_distances)
-        first_point = np.array([0, k_distances[0]])
-        last_point = np.array([n-1, k_distances[-1]])
-        
-        max_distance = 0
-        elbow_index = 0
-        for i in range(n):
-            point = np.array([i, k_distances[i]])
-            distance = np.abs(np.cross(last_point-first_point, first_point-point)) / np.linalg.norm(last_point-first_point)
-            if distance > max_distance:
-                max_distance = distance
-                elbow_index = i
-        
-        recommended_eps = k_distances[elbow_index]
-        
-        # Return recommended eps dan statistik
-        return {
-            'recommended_eps': float(recommended_eps),
-            'min_eps': float(np.percentile(k_distances, 5)),  # 5th percentile
-            'max_eps': float(np.percentile(k_distances, 95)),  # 95th percentile
-            'median_eps': float(np.median(k_distances)),
-            'k_distances': k_distances
-        }
+    # Recommendation UI removed from app; keep code minimal here
     
     def perform_clustering(self, X_reduced, method='kmeans', n_clusters=3, **kwargs):
         """Perform clustering dengan berbagai metode"""
@@ -122,19 +86,38 @@ class ClusteringEngine:
             self.model = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
         
         self.labels = self.model.fit_predict(X_reduced)
-        
-        # Calculate metrics
-        if method == 'hierarchical':
-            n_clusters_found = len(np.unique(self.labels))
+
+        # Calculate clusters and noise
+        if method == 'dbscan':
+            core_mask = self.labels != -1
+            unique_clusters = np.unique(self.labels[core_mask])
+            n_clusters_found = len(unique_clusters)
+            noise_points = int(np.sum(~core_mask))
+        elif method == 'hierarchical':
+            unique_clusters = np.unique(self.labels)
+            n_clusters_found = len(unique_clusters)
+            noise_points = 0
         else:
-            n_clusters_found = len(np.unique(self.labels[self.labels != -1])) if method == 'dbscan' else n_clusters
-        noise_points = np.sum(self.labels == -1) if method == 'dbscan' else 0
-        
-        if n_clusters_found > 1:
-            silhouette = silhouette_score(X_reduced, self.labels)
-            db_index = davies_bouldin_score(X_reduced, self.labels)
-            calinski = calinski_harabasz_score(X_reduced, self.labels)
-        else:
+            unique_clusters = np.unique(self.labels)
+            n_clusters_found = len(unique_clusters)
+            noise_points = 0
+
+        # Metrics: for DBSCAN, compute on core samples if at least 2 clusters; else set to -1
+        try:
+            if n_clusters_found > 1:
+                if method == 'dbscan':
+                    X_eval = X_reduced[core_mask]
+                    labels_eval = self.labels[core_mask]
+                else:
+                    X_eval = X_reduced
+                    labels_eval = self.labels
+
+                silhouette = silhouette_score(X_eval, labels_eval)
+                db_index = davies_bouldin_score(X_eval, labels_eval)
+                calinski = calinski_harabasz_score(X_eval, labels_eval)
+            else:
+                silhouette = db_index = calinski = -1
+        except Exception:
             silhouette = db_index = calinski = -1
         
         self.clustering_results = {

@@ -261,54 +261,21 @@ def main():
     with col3:
         if clustering_method == 'dbscan':
             st.markdown("**DBSCAN Parameters**")
-            
-            # Hitung rekomendasi eps jika belum ada di session state
-            if 'dbscan_recommendation' not in st.session_state or st.session_state.get('last_X_reduced_shape') != st.session_state.get('X_reduced', np.array([])).shape:
-                if 'X_reduced' in st.session_state:
-                    clustering_engine_temp = ClusteringEngine()
-                    min_samples_for_rec = st.session_state.get('dbscan_min_samples', 5)
-                    st.session_state['dbscan_recommendation'] = clustering_engine_temp.recommend_dbscan_eps(
-                        st.session_state['X_reduced'], 
-                        min_samples=min_samples_for_rec
-                    )
-                    st.session_state['last_X_reduced_shape'] = st.session_state['X_reduced'].shape
-            
-            # Tampilkan rekomendasi jika ada
-            if 'dbscan_recommendation' in st.session_state:
-                rec = st.session_state['dbscan_recommendation']
-                st.info(f"💡 **Recommended EPS**: {rec['recommended_eps']:.3f}\n\n"
-                       f"Range: {rec['min_eps']:.3f} - {rec['max_eps']:.3f}")
-                
-                # Tampilkan k-distance graph dalam expander
-                with st.expander("📊 View K-Distance Graph", expanded=False):
-                    from utils.analysis import ClusterAnalyzer
-                    analyzer = ClusterAnalyzer()
-                    fig = analyzer.plot_k_distance_graph(rec['k_distances'], rec['recommended_eps'])
-                    st.plotly_chart(fig, use_container_width=True)
-                    st.markdown("""
-                        **How to use this graph:**
-                        - The "elbow" in the curve suggests a good EPS value
-                        - Points below the red line will likely form clusters
-                        - Points above the red line may be considered noise
-                    """)
-                
-                # Gunakan range yang lebih luas berdasarkan data
-                eps_min = max(0.01, rec['min_eps'] * 0.5)
-                eps_max = rec['max_eps'] * 2.0
-                eps_default = rec['recommended_eps']
-            else:
-                # Fallback jika belum ada preprocessing
-                eps_min = 0.1
-                eps_max = 10.0
-                eps_default = DEFAULT_PARAMS['eps_default']
-            
-            eps = st.slider("EPS (Epsilon)", eps_min, eps_max, eps_default, 
-                          help="Maximum distance between two samples to be considered neighbors")
-            min_samples = st.slider("Min Samples", 2, 20, DEFAULT_PARAMS['min_samples_default'],
-                                  help="Minimum number of samples in a neighborhood to form a core point")
-            
-            # Store min_samples untuk recalculation
-            st.session_state['dbscan_min_samples'] = min_samples
+            # Simple controls without recommendation/graph
+            eps = st.slider(
+                "EPS (Epsilon)",
+                0.1,
+                10.0,
+                float(DEFAULT_PARAMS['eps_default']),
+                help="Maximum distance between two samples to be considered neighbors"
+            )
+            min_samples = st.slider(
+                "Min Samples",
+                2,
+                20,
+                int(DEFAULT_PARAMS['min_samples_default']),
+                help="Minimum number of samples in a neighborhood to form a core point"
+            )
         else:
             eps = None
             min_samples = None
